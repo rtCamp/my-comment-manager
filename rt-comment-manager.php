@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: rt Comments Manager
+Plugin Name: Rt Comments Manager
 Plugin URI: http://rtcamp.com/
-Description: rtComments manager allows you to view your comments post wise, it also allows you to reply to your comments from within admin panel without you having to visit the site to respond to comments
+Description: Rt Comments Manager allows you to view the unnreplied comments on your posts, it also allows you to ignore the comment from your displayed comment list.
 Version: 0.1
 Author: Parshwa Nemi Jain
 Author URI: http://rtcamp.com/
@@ -54,7 +54,7 @@ function rt_comment_manager() {
     ?>
 <div class="wrap">
         <?php
-        $title = "Rt Comment Manager";
+        $title = "Rt Comments Manager";
         screen_icon();
         echo "<h2>".$title."</h2>";
         echo "<h3>Comments On My Posts</h3>";
