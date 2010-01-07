@@ -25,7 +25,7 @@ function rt_cm_link($status_links = array() ) {
         $class = ' class="current"';
     $link = "/edit-comments.php?comment_status=" . $status;
     $status_links[] = "<li><a href=\"edit-comments.php?page=rt_comment_manager\"$class>" . sprintf(
-            __('Comments on my posts', 'rt_cm' ) . ' (%s)',rt_count_unreplied_comments()) . '</a>';
+            __('Unreplied Comments On My Posts', 'rt_cm' ) . ' (%s)',rt_count_unreplied_comments()) . '</a>';
     return $status_links;
 }
 /* added js for comment....  pragati sureka*/
