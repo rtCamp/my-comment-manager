@@ -186,7 +186,8 @@ function rt_unreplied_comments() {
     $rt_post_sql = "SELECT ID FROM $wpdb->posts WHERE post_author=$user_ID AND post_status != 'trash'";
     $rt_posts = $wpdb->get_col($rt_post_sql);
     $rt_posts_ids = implode(',', $rt_posts);
-    $rt_comment_sql = "SELECT * FROM $wpdb->comments WHERE comment_post_ID IN ($rt_posts_ids) AND comment_type NOT IN ('trackback','pingback') ORDER BY comment_post_ID, comment_date_gmt DESC";
+    list($rt_ignore_comment_id, $ignored_total) = rt_ignored_comments();
+    $rt_comment_sql = "SELECT * FROM $wpdb->comments WHERE comment_post_ID IN ($rt_posts_ids) AND comment_ID NOT IN ({$rt_ignore_comment_id}) AND comment_type NOT IN ('trackback','pingback') ORDER BY comment_post_ID, comment_date_gmt DESC";
     $rt_comments = $wpdb->get_results($rt_comment_sql);
     $post_id = 0;
     $replied = false;
