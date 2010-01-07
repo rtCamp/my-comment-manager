@@ -31,7 +31,8 @@ function rt_cm_link($status_links = array() ) {
 /* added js for comment....  pragati sureka*/
 wp_enqueue_script('admin-comments');
 function rt_admin_page() {
-    add_submenu_page('edit-comments.php', 'Rt Comments Manager', 'Rt Comments Manager', 'moderate_comments', 'rt_comment_manager', 'rt_comment_manager' );
+    $rt_awaiting_mod = rt_count_unreplied_comments();
+    add_submenu_page('edit-comments.php', 'Rt Comments Manager', sprintf( __('Rt Comments Manager %s'), "<span id='awaiting-mod' class='count-$rt_awaiting_mod'><span class='pending-count'>" . number_format_i18n($rt_awaiting_mod) . "</span></span>" ), 'moderate_comments', 'rt_comment_manager', 'rt_comment_manager' );
 }
 
 function rt_comment_manager() {
