@@ -18,7 +18,12 @@ if (isset ($_GET['unignore'])) {
     rt_remove_ignore_comment($rt_get_unignore_id);
 }
 
-add_filter('comment_status_links', 'rt_cm_link');
+
+/**
+ * This function puts link in the edit comment page.
+ *
+ * @return $status_links which contains the link parameter.
+*/
 function rt_cm_link($status_links = array() ) {
     $status = "comments_on_my_post";
     if ( $status == $comment_status )
@@ -30,11 +35,20 @@ function rt_cm_link($status_links = array() ) {
 }
 /* added js for comment....  pragati sureka*/
 wp_enqueue_script('admin-comments');
+
+/**
+ * This function puts submenu under comment in admin menu.
+ *
+*/
 function rt_admin_page() {
     $rt_awaiting_mod = rt_count_unreplied_comments();
     add_submenu_page('edit-comments.php', 'Rt Comments Manager', sprintf( __('Rt Comments Manager %s'), "<span id='awaiting-mod' class='count-$rt_awaiting_mod'><span class='pending-count'>" . number_format_i18n($rt_awaiting_mod) . "</span></span>" ), 'moderate_comments', 'rt_comment_manager', 'rt_comment_manager' );
 }
 
+/**
+ * This function is responsible for the Rt Comment Manager page.
+ *
+*/
 function rt_comment_manager() {
     global $wpdb;
     ?>
@@ -72,9 +86,9 @@ function rt_comment_manager() {
                 $rt_status_links = array();
                 $num_comments = ( $rt_post_id ) ? rt_count_comments( $rt_post_id ) : rt_count_comments();
                 $stati = array(
-                        'all' => _n_noop('All', 'All'), // singular not used
+                        'all' => _n_noop('All', 'All'),
                         'moderated' => _n_noop('Pending <span class="count">(<span class="pending-count">%s</span>)</span>', 'Pending <span class="count">(<span class="pending-count">%s</span>)</span>'),
-                        'approved' => _n_noop('Approved', 'Approved'), // singular not used
+                        'approved' => _n_noop('Approved', 'Approved'),
                         'spam' => _n_noop('Spam <span class="count">(<span class="spam-count">%s</span>)</span>', 'Spam <span class="count">(<span class="spam-count">%s</span>)</span>'),
                         'trash' => _n_noop('Trash <span class="count">(<span class="trash-count">%s</span>)</span>', 'Trash <span class="count">(<span class="trash-count">%s</span>)</span>'),
                         'unreplied' => _n_noop('Unreplied Comment <span class="count">(<span class="unreplied-count">%s</span>)</span>', 'Unreplied Comments <span class="count">(<span class="unreplied-count">%s</span>)</span>'),
@@ -98,11 +112,7 @@ function rt_comment_manager() {
                     $link = add_query_arg( 'comment_status', $status, $link );
                     if ( $rt_post_id )
                         $link = add_query_arg( 'p', absint( $rt_post_id ), $link );
-                    /*
-	// I toyed with this, but decided against it. Leaving it in here in case anyone thinks it is a good idea. ~ Mark
-	if ( !empty( $_GET['s'] ) )
-		$link = add_query_arg( 's', esc_attr( stripslashes( $_GET['s'] ) ), $link );
-                    */
+                    
                     $rt_status_links[] = "<li class='$status'><a href='$link'$class>" . sprintf(
                             _n( $label[0], $label[1], $num_comments->$status ),
                             number_format_i18n( $num_comments->$status )
@@ -174,14 +184,23 @@ function rt_comment_manager() {
     }
     wp_comment_reply('-1', true, 'detail');
     wp_comment_trashnotice();
-    //include('admin-footer.php');
 }
 
+/**
+ * This function counts the number of unreplied comments in the user's posts.
+ *
+ * @return $unreplied_total which contains the number of unreplied comments.
+*/
 function rt_count_unreplied_comments() {
     list($rt_unreplied_comment_id, $unreplied_total) = rt_unreplied_comments();
     return $unreplied_total;
 }
 
+/**
+ * This function gets the unreplied comments.
+ *
+ * @return array($rt_unreplied_comment_id, $unreplied_total) which contains the unreplied comment ids and total unreplied comments.
+*/
 function rt_unreplied_comments() {
     global $wpdb, $user_ID;
     $rt_post_sql = "SELECT ID FROM $wpdb->posts WHERE post_author=$user_ID AND post_status != 'trash'";
@@ -216,12 +235,14 @@ function rt_unreplied_comments() {
         }
     }
     $rt_unreplied_comment_id = substr($unreplied_comments, 0, -2);
-//if ($rt_unreplied_comment_id) {
-//$rt_unreplied_comments = $wpdb->get_results("SELECT * FROM $wpdb->comments USE INDEX (comment_date_gmt) WHERE comment_ID IN ($rt_unreplied_comment_id) ORDER BY comment_date_gmt DESC" );
-//}
     return array($rt_unreplied_comment_id, $unreplied_total);
 }
 
+/**
+ * This function gets the ignored comments.
+ *
+ * @return array($rt_ignore_comment_ids, $rt_total_ignore) which contains the ignored comment ids and total ignored comments.
+*/
 function rt_ignored_comments() {
     global $wpdb;
     $meta_key = 'rt_comment_manger_ignore';
@@ -233,6 +254,11 @@ function rt_ignored_comments() {
     return array($rt_ignore_comment_ids, $rt_total_ignore);
 }
 
+/**
+ * This function gets the comment list.
+ *
+ * @return array($_rt_comments, $total) which contains the comments and total comments.
+*/
 function rt_get_comment_list($rt_comment_status = '', $rt_search = false, $rt_start, $rt_comments_per_page, $rt_post_id = 0, $rt_comment_type = '') {
     global $wpdb, $user_ID;
     $rt_start = abs((int)$rt_start);
@@ -317,13 +343,17 @@ function rt_get_comment_list($rt_comment_status = '', $rt_search = false, $rt_st
     } else {
         $query .= "AND $approved $post $typesql";
     }
-    //echo "SELECT * $query $orderby";
     $_rt_comments = $wpdb->get_results("SELECT * $query $orderby");
     if ( '' === $total )
         $total = $wpdb->get_var("SELECT COUNT(c.comment_ID) $query");
     return array($_rt_comments, $total);
 }
 
+/**
+ * This function counts the comments.
+ *
+ * @return $stats which contains count of comments.
+*/
 function rt_count_comments($rt_post_id = 0) {
     global $wpdb, $user_ID;
     $rt_post_id = (int)$rt_post_id;
@@ -342,7 +372,6 @@ function rt_count_comments($rt_post_id = 0) {
     $rt_approved = array('0' => 'moderated', '1' => 'approved', 'spam' => 'spam', 'trash' => 'trash', 'post-trashed' => 'post-trashed', 'unreplied' => 'unreplied', 'ignored' => 'ignored');
     $rt_known_types = array_keys($rt_approved);
     foreach( (array) $rt_count as $row_num => $row ) {
-// Don't count post-trashed toward totals
         if ( 'post-trashed' != $row['comment_approved'] && 'trash' != $row['comment_approved'] )
             $rt_total += $row['num_comments'];
         if ( in_array( $row['comment_approved'], $rt_known_types ) )
@@ -360,6 +389,10 @@ function rt_count_comments($rt_post_id = 0) {
     return $stats;
 }
 
+/**
+ * This function displays the comment list.
+ *
+*/
 function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, $from_ajax = false ) {
     global $comment, $post, $_comment_pending_count;
     $comment = get_comment( $comment_id );
@@ -442,7 +475,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                             'trash' => '', 'untrash' => '', 'delete' => ''
                     );
 
-                    if ( $comment_status && 'all' != $comment_status ) { // not looking at all comments
+                    if ( $comment_status && 'all' != $comment_status ) {
                         if ( 'approved' == $the_comment_status )
                             $actions['unapprove'] = "<a href='$unapprove_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=unapproved vim-u vim-destructive' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
                         else if ( 'unapproved' == $the_comment_status )
@@ -486,8 +519,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                     foreach ( $actions as $action => $link ) {
                         ++$i;
                         ( ( ('approve' == $action || 'unapprove' == $action) && 2 === $i ) || 1 === $i ) ? $sep = '' : $sep = ' | ';
-
-                        // Reply and quickedit need a hide-if-no-js span when not added with ajax
+ 
                         if ( ('reply' == $action || 'quickedit' == $action) && ! $from_ajax )
                             $action .= ' hide-if-no-js';
                         elseif ( ($action == 'untrash' && $the_comment_status == 'trash') || ($action == 'unspam' && $the_comment_status == 'spam') ) {
@@ -523,7 +555,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                     echo '">';
                     comment_author_IP();
                     echo '</a>';
-                } //current_user_can
+                } 
                 echo '</td>';
                 break;
             case 'date':
@@ -570,6 +602,10 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
     echo "</tr>\n";
 }
 
+/**
+ * This function ignores the comment.
+ *
+*/
 function rt_ignore_comment($rt_comment_id) {
     $rt_ignore_comment_id = (int)$rt_comment_id;
     if ($rt_ignore_comment_id > 0) {
@@ -579,6 +615,10 @@ function rt_ignore_comment($rt_comment_id) {
     }
 }
 
+/**
+ * This function removes the comment from ignore list.
+ *
+*/
 function rt_remove_ignore_comment($rt_comment_id) {
     $rt_ignore_comment_id = (int)$rt_comment_id;
     if ($rt_ignore_comment_id > 0) {
@@ -588,4 +628,5 @@ function rt_remove_ignore_comment($rt_comment_id) {
 }
 
 add_action('admin_menu', 'rt_admin_page');
+add_filter('comment_status_links', 'rt_cm_link');
 ?>
