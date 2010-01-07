@@ -187,7 +187,12 @@ function rt_unreplied_comments() {
     $rt_posts = $wpdb->get_col($rt_post_sql);
     $rt_posts_ids = implode(',', $rt_posts);
     list($rt_ignore_comment_id, $ignored_total) = rt_ignored_comments();
-    $rt_comment_sql = "SELECT * FROM $wpdb->comments WHERE comment_post_ID IN ($rt_posts_ids) AND comment_ID NOT IN ({$rt_ignore_comment_id}) AND comment_type NOT IN ('trackback','pingback') ORDER BY comment_post_ID, comment_date_gmt DESC";
+    if ($ignored_total > 0) {
+        $rt_comment_sql = "SELECT * FROM $wpdb->comments WHERE comment_post_ID IN ($rt_posts_ids) AND comment_ID NOT IN ({$rt_ignore_comment_id}) AND comment_type NOT IN ('trackback','pingback') ORDER BY comment_post_ID, comment_date_gmt DESC";
+    }
+    else {
+        $rt_comment_sql = "SELECT * FROM $wpdb->comments WHERE comment_post_ID IN ($rt_posts_ids) AND comment_type NOT IN ('trackback','pingback') ORDER BY comment_post_ID, comment_date_gmt DESC";
+    }
     $rt_comments = $wpdb->get_results($rt_comment_sql);
     $post_id = 0;
     $replied = false;
@@ -462,12 +467,12 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
 
                     if ( 'trash' != $the_comment_status ) {
                         if ( 'ignored' != $comment_status) {
-                        $actions['edit'] = "<a href='comment.php?action=editcomment&amp;c={$comment->comment_ID}' title='" . __('Edit comment') . "'>". __('Edit') . '</a>';
-                        $actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
-                        if ( 'spam' != $the_comment_status ) {
-                            $actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\');return false;" class="vim-r" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a>';
-                        $actions['ignore'] = "<a href='$ignore_url' class='delete:the-comment-list:comment-$comment->comment_ID::ignore=1 delete vim-d vim-destructive' title='" . __( 'Ignore this comment' ) . "'>" . _x('Ignore', 'verb') . '</a>';
-                        }
+                            $actions['edit'] = "<a href='comment.php?action=editcomment&amp;c={$comment->comment_ID}' title='" . __('Edit comment') . "'>". __('Edit') . '</a>';
+                            $actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
+                            if ( 'spam' != $the_comment_status ) {
+                                $actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\');return false;" class="vim-r" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a>';
+                                $actions['ignore'] = "<a href='$ignore_url' class='delete:the-comment-list:comment-$comment->comment_ID::ignore=1 delete vim-d vim-destructive' title='" . __( 'Ignore this comment' ) . "'>" . _x('Ignore', 'verb') . '</a>';
+                            }
                         }
                         else {
                             $actions['unignore'] = "<a href='$unignore_url' class='delete:the-comment-list:comment-$comment->comment_ID::unignore=1 delete vim-d vim-destructive' title='" . __( 'Remove this comment from Ignore list' ) . "'>" . _x('Remove', 'verb') . '</a>';
