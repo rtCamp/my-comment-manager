@@ -3,7 +3,7 @@
 Plugin Name: Rt Comments Manager
 Plugin URI: http://rtcamp.com/
 Description: Rt Comments Manager allows you to view the unnreplied comments on your posts, it also allows you to ignore the comment from your displayed comment list.
-Version: 1.0
+Version: 0.1
 Author: Parshwa Nemi Jain
 Author URI: http://rtcamp.com/
 
