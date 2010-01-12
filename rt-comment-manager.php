@@ -23,7 +23,7 @@ if (isset ($_GET['unignore'])) {
  * This function puts link in the edit comment page.
  *
  * @return $status_links which contains the link parameter.
-*/
+ */
 function rt_cm_link($status_links = array() ) {
     $status = "comments_on_my_post";
     if ( $status == $comment_status )
@@ -39,7 +39,7 @@ wp_enqueue_script('admin-comments');
 /**
  * This function puts submenu under comment in admin menu.
  *
-*/
+ */
 function rt_admin_page() {
     $rt_awaiting_mod = rt_count_unreplied_comments();
     add_submenu_page('edit-comments.php', 'Rt Comments Manager', sprintf( __('Rt Comments Manager %s'), "<span id='awaiting-mod' class='count-$rt_awaiting_mod'><span class='pending-count'>" . number_format_i18n($rt_awaiting_mod) . "</span></span>" ), 'moderate_comments', 'rt_comment_manager', 'rt_comment_manager' );
@@ -48,22 +48,26 @@ function rt_admin_page() {
 /**
  * This function is responsible for the Rt Comment Manager page.
  *
-*/
+ */
 function rt_comment_manager() {
     global $wpdb;
     ?>
 <div class="wrap">
         <?php
         $title = "Rt Comments Manager";
-        screen_icon();
-        echo "<h2>".$title."</h2>";
-        echo "<h3>Comments On My Posts</h3>";
+        screen_icon();?>
+    <h2><?php echo esc_html( $title );
+            if ( isset($_GET['s']) && $_GET['s'] )
+                printf( '<span class="subtitle">' . sprintf( __( 'Search results for &#8220;%s&#8221;' ), wp_html_excerpt( esc_html( stripslashes( $_GET['s'] ) ), 50 ) ) . '</span>' ); ?>
+    </h2>
+
+        <?php
         $rt_comment_status = isset($_REQUEST['comment_status']) ? $_REQUEST['comment_status'] : 'all';
         if ( !in_array($rt_comment_status, array('all', 'moderated', 'approved', 'spam', 'trash', 'unreplied', 'ignored')) ) {
             $rt_comment_status = 'all';
         }
         $rt_mode = ( ! isset($_GET['mode']) || empty($_GET['mode']) ) ? 'detail' : esc_attr($_GET['mode']);
-        $rt_search = '';
+        $rt_search = isset($_GET['s']) ? $_GET['s'] : '';
         $rt_comments_per_page = 10;
         $rt_page = isset($_GET['apage']) ? $_GET['apage'] : 1;
         $rt_start = ( $rt_page - 1 ) * $rt_comments_per_page;
@@ -80,7 +84,7 @@ function rt_comment_manager() {
                 'current' => $rt_page
         ));
         ?>
-    <form id="comments-form" action="#" method="get">
+    <form id="comments-form" action="" method="get">
         <ul class="subsubsub">
                 <?php
                 $rt_status_links = array();
@@ -112,7 +116,7 @@ function rt_comment_manager() {
                     $link = add_query_arg( 'comment_status', $status, $link );
                     if ( $rt_post_id )
                         $link = add_query_arg( 'p', absint( $rt_post_id ), $link );
-                    
+
                     $rt_status_links[] = "<li class='$status'><a href='$link'$class>" . sprintf(
                             _n( $label[0], $label[1], $num_comments->$status ),
                             number_format_i18n( $num_comments->$status )
@@ -122,11 +126,12 @@ function rt_comment_manager() {
                 unset($rt_status_links);
                 ?>
         </ul>
-        <!--<p class="search-box">
-            <label class="screen-reader-text" for="comment-search-input"><?php //_e( 'Search Comments' ); ?>:</label>
-            <input type="text" id="comment-search-input" name="s" value="<?php //_admin_search_query(); ?>" />
-            <input type="submit" value="<?php //esc_attr_e( 'Search Comments' ); ?>" class="button" />
-        </p>-->
+        <p class="search-box">
+            <label class="screen-reader-text" for="comment-search-input"><?php _e( 'Search Comments' ); ?>:</label>
+            <input type="text" id="comment-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+            <input type="hidden" name="page" value="rt_comment_manager">
+            <input type="submit" value="<?php esc_attr_e( 'Search Comments' ); ?>" class="button" />
+        </p>
         <input type="hidden" name="mode" value="<?php echo esc_attr($rt_mode); ?>" />
             <?php if ( $rt_post_id ) : ?>
         <input type="hidden" name="p" value="<?php echo esc_attr( intval( $rt_post_id ) ); ?>" />
@@ -190,7 +195,7 @@ function rt_comment_manager() {
  * This function counts the number of unreplied comments in the user's posts.
  *
  * @return $unreplied_total which contains the number of unreplied comments.
-*/
+ */
 function rt_count_unreplied_comments() {
     list($rt_unreplied_comment_id, $unreplied_total) = rt_unreplied_comments();
     return $unreplied_total;
@@ -200,7 +205,7 @@ function rt_count_unreplied_comments() {
  * This function gets the unreplied comments.
  *
  * @return array($rt_unreplied_comment_id, $unreplied_total) which contains the unreplied comment ids and total unreplied comments.
-*/
+ */
 function rt_unreplied_comments() {
     global $wpdb, $user_ID;
     $rt_post_sql = "SELECT ID FROM $wpdb->posts WHERE post_author=$user_ID AND post_status != 'trash'";
@@ -242,7 +247,7 @@ function rt_unreplied_comments() {
  * This function gets the ignored comments.
  *
  * @return array($rt_ignore_comment_ids, $rt_total_ignore) which contains the ignored comment ids and total ignored comments.
-*/
+ */
 function rt_ignored_comments() {
     global $wpdb;
     $meta_key = 'rt_comment_manger_ignore';
@@ -258,7 +263,7 @@ function rt_ignored_comments() {
  * This function gets the comment list.
  *
  * @return array($_rt_comments, $total) which contains the comments and total comments.
-*/
+ */
 function rt_get_comment_list($rt_comment_status = '', $rt_search = false, $rt_start, $rt_comments_per_page, $rt_post_id = 0, $rt_comment_type = '') {
     global $wpdb, $user_ID;
     $rt_start = abs((int)$rt_start);
@@ -331,7 +336,7 @@ function rt_get_comment_list($rt_comment_status = '', $rt_search = false, $rt_st
     $query = "FROM $wpdb->comments c LEFT JOIN $wpdb->posts p ON c.comment_post_ID = p.ID WHERE p.post_status != 'trash' ";
     if ( $rt_search ) {
         $total = '';
-        $rt_search = $wpdb->escape($s);
+        $rt_search = $wpdb->escape($rt_search);
         $query .= "AND
 			(c.comment_author LIKE '%$rt_search%' OR
 			c.comment_author_email LIKE '%$rt_search%' OR
@@ -353,7 +358,7 @@ function rt_get_comment_list($rt_comment_status = '', $rt_search = false, $rt_st
  * This function counts the comments.
  *
  * @return $stats which contains count of comments.
-*/
+ */
 function rt_count_comments($rt_post_id = 0) {
     global $wpdb, $user_ID;
     $rt_post_id = (int)$rt_post_id;
@@ -392,7 +397,7 @@ function rt_count_comments($rt_post_id = 0) {
 /**
  * This function displays the comment list.
  *
-*/
+ */
 function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, $from_ajax = false ) {
     global $comment, $post, $_comment_pending_count;
     $comment = get_comment( $comment_id );
@@ -519,7 +524,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                     foreach ( $actions as $action => $link ) {
                         ++$i;
                         ( ( ('approve' == $action || 'unapprove' == $action) && 2 === $i ) || 1 === $i ) ? $sep = '' : $sep = ' | ';
- 
+
                         if ( ('reply' == $action || 'quickedit' == $action) && ! $from_ajax )
                             $action .= ' hide-if-no-js';
                         elseif ( ($action == 'untrash' && $the_comment_status == 'trash') || ($action == 'unspam' && $the_comment_status == 'spam') ) {
@@ -555,7 +560,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                     echo '">';
                     comment_author_IP();
                     echo '</a>';
-                } 
+                }
                 echo '</td>';
                 break;
             case 'date':
@@ -605,7 +610,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
 /**
  * This function ignores the comment.
  *
-*/
+ */
 function rt_ignore_comment($rt_comment_id) {
     $rt_ignore_comment_id = (int)$rt_comment_id;
     if ($rt_ignore_comment_id > 0) {
@@ -618,7 +623,7 @@ function rt_ignore_comment($rt_comment_id) {
 /**
  * This function removes the comment from ignore list.
  *
-*/
+ */
 function rt_remove_ignore_comment($rt_comment_id) {
     $rt_ignore_comment_id = (int)$rt_comment_id;
     if ($rt_ignore_comment_id > 0) {
