@@ -25,12 +25,20 @@ if (isset ($_GET['unignore'])) {
  * @return $status_links which contains the link parameter.
  */
 function rt_cm_link($status_links = array() ) {
-    $status = "comments_on_my_post";
+    $status = "unreplied";
     if ( $status == $comment_status )
         $class = ' class="current"';
     $link = "/edit-comments.php?comment_status=" . $status;
-    $status_links[] = "<li><a href=\"edit-comments.php?page=rt_comment_manager\"$class>" . sprintf(
+    $status_links[] = "<li><a href=\"edit-comments.php?page=rt_comment_manager&comment_status=unreplied\"$class>" . sprintf(
             __('Unreplied Comments On My Posts', 'rt_cm' ) . ' (%s)',rt_count_unreplied_comments()) . '</a>';
+    return $status_links;
+}
+function rt_cm_reply_link($status_links = array()) {
+    global $comment;
+    $status = $comment->comment_ID;
+    $comment_status = isset($_REQUEST['comment_status']) ? $_REQUEST['comment_status'] : 'all';
+    $status_links[] = "<a href=\"edit-comments.php?page=rt_comment_manager&comment_status=$comment_status&ignore=$status\"$class>" . sprintf(
+            __('Ignore')) . '</a>';
     return $status_links;
 }
 /* added js for comment....  pragati sureka*/
@@ -498,7 +506,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                         $actions['untrash'] = "<a href='$untrash_url' class='delete:the-comment-list:comment-$comment->comment_ID:66cc66:untrash=1 vim-z vim-destructive'>" . __( 'Restore' ) . '</a>';
                     }
 
-                    if ( ('spam' == $the_comment_status || 'trash' == $the_comment_status || !EMPTY_TRASH_DAYS) && 'ignored' != $comment_status ) {
+                    if ( 'spam' == $the_comment_status || 'trash' == $the_comment_status || !EMPTY_TRASH_DAYS || 'ignored' == $comment_status ) {
                         $actions['delete'] = "<a href='$delete_url' class='delete:the-comment-list:comment-$comment->comment_ID::delete=1 delete vim-d vim-destructive'>" . __('Delete Permanently') . '</a>';
                     } else {
                         $actions['trash'] = "<a href='$trash_url' class='delete:the-comment-list:comment-$comment->comment_ID::trash=1 delete vim-d vim-destructive' title='" . __( 'Move this comment to the trash' ) . "'>" . _x('Trash', 'verb') . '</a>';
@@ -510,11 +518,11 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                             $actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
                             if ( 'spam' != $the_comment_status ) {
                                 $actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\');return false;" class="vim-r" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a>';
-                                $actions['ignore'] = "<a href='$ignore_url' class='delete:the-comment-list:comment-$comment->comment_ID::ignore=1 delete vim-d vim-destructive' title='" . __( 'Ignore this comment' ) . "'>" . _x('Ignore', 'verb') . '</a>';
+                                //$actions['ignore'] = "<a href='$ignore_url' class='rtignore' title='" . __( 'Ignore this comment' ) . "'>" . _x('Ignore', 'verb') . '</a>';
                             }
                         }
                         else {
-                            $actions['unignore'] = "<a href='$unignore_url' class='delete:the-comment-list:comment-$comment->comment_ID::unignore=1 delete vim-d vim-destructive' title='" . __( 'Remove this comment from Ignore list' ) . "'>" . _x('Remove', 'verb') . '</a>';
+                            $actions['unignore'] = "<a href='$unignore_url' class='rtunignore' title='" . __( 'Remove this comment from Ignore list' ) . "'>" . _x('Remove', 'verb') . '</a>';
                         }
                     }
                     $actions = apply_filters( 'comment_row_actions', array_filter($actions), $comment );
@@ -632,6 +640,11 @@ function rt_remove_ignore_comment($rt_comment_id) {
     }
 }
 
+$comment_status = isset($_REQUEST['comment_status']) ? $_REQUEST['comment_status'] : 'all';
+if (($comment_status == 'all') || ($comment_status == 'moderated') || ($comment_status == 'approved') || ($comment_status == 'unreplied')) {
+    add_filter('comment_row_actions', 'rt_cm_reply_link');
+}
 add_action('admin_menu', 'rt_admin_page');
 add_filter('comment_status_links', 'rt_cm_link');
+//add_filter('comment_row_actions', 'rt_cm_reply_link', 10, 2);
 ?>
