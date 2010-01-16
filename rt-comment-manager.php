@@ -33,6 +33,12 @@ function rt_cm_link($status_links = array() ) {
             __('Unreplied Comments On My Posts', 'rt_cm' ) . ' (%s)',rt_count_unreplied_comments()) . '</a>';
     return $status_links;
 }
+
+/**
+ * This function adds the ignore link.
+ *
+ * @return $status_links which contains the link parameter.
+ */
 function rt_cm_reply_link($status_links = array()) {
     global $comment;
     $status = $comment->comment_ID;
