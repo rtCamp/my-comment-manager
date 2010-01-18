@@ -647,7 +647,8 @@ function rt_remove_ignore_comment($rt_comment_id) {
 }
 
 $comment_status = isset($_REQUEST['comment_status']) ? $_REQUEST['comment_status'] : 'all';
-if (($comment_status == 'all') || ($comment_status == 'moderated') || ($comment_status == 'approved') || ($comment_status == 'unreplied')) {
+$rt_check_page = isset($_GET['page']) ? $_GET['page'] : null;
+if (($rt_check_page == 'rt_comment_manager') && (($comment_status == 'all') || ($comment_status == 'moderated') || ($comment_status == 'approved') || ($comment_status == 'unreplied'))) {
     add_filter('comment_row_actions', 'rt_cm_reply_link');
 }
 add_action('admin_menu', 'rt_admin_page');
