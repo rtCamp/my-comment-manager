@@ -1,10 +1,10 @@
 <?php
 /*
-Plugin Name: Rt Comments Manager
-Plugin URI: http://rtcamp.com/
-Description: Rt Comments Manager allows you to view the unnreplied comments on your posts, it also allows you to ignore the comment from your displayed comment list.
-Version: 0.1
-Author: Parshwa Nemi Jain
+Plugin Name: My Comments Manager
+Plugin URI: http://wpveda.com/my-comments-manager-wordpress-plugin/
+Description: My Comments Manager is useful for multiauthor blogs where each author can manage comments posted on his/her articles. S/He can see all comments on one screen to which s/he hasn't replied. It also allows you to ignore the comments from your displayed comment list.
+Version: 1.3
+Author: rtCamp
 Author URI: http://rtcamp.com/
 
 */
@@ -19,8 +19,10 @@ if (isset ($_GET['unignore'])) {
 }
 
 
+
+add_filter('comment_status_links', 'rt_cm_link');
 /**
- * This function puts link in the edit comment page.
+ * This function puts the Unreplied link in the edit comment page.
  *
  * @return $status_links which contains the link parameter.
  */
@@ -29,13 +31,15 @@ function rt_cm_link($status_links = array() ) {
     if ( $status == $comment_status )
         $class = ' class="current"';
     $link = "/edit-comments.php?comment_status=" . $status;
-    $status_links[] = "<li><a href=\"edit-comments.php?page=rt_comment_manager&comment_status=unreplied\"$class>" . sprintf(
+    $status_links[] = "<li><a href=\"edit-comments.php?page=my_comment_manager&comment_status=unreplied\"$class>" . sprintf(
             __('Unreplied Comments On My Posts', 'rt_cm' ) . ' (%s)',rt_count_unreplied_comments()) . '</a>';
     return $status_links;
 }
 
+
+
 /**
- * This function adds the ignore link.
+ * This function adds the ignore link in array format.
  *
  * @return $status_links which contains the link parameter.
  */
@@ -43,32 +47,34 @@ function rt_cm_reply_link($status_links = array()) {
     global $comment;
     $status = $comment->comment_ID;
     $comment_status = isset($_REQUEST['comment_status']) ? $_REQUEST['comment_status'] : 'all';
-    $status_links[] = "<a href=\"edit-comments.php?page=rt_comment_manager&comment_status=$comment_status&ignore=$status\"$class>" . sprintf(
+    $status_links[] = "<a href=\"edit-comments.php?page=my_comment_manager&comment_status=$comment_status&ignore=$status\"$class>" . sprintf(
             __('Ignore')) . '</a>';
     return $status_links;
 }
 /* added js for comment....  pragati sureka*/
 wp_enqueue_script('admin-comments');
 
+
+add_action('admin_menu', 'rt_admin_page');
 /**
- * This function puts submenu under comment in admin menu.
+ * This function puts submenu under Comment in admin menu.
  *
  */
 function rt_admin_page() {
     $rt_awaiting_mod = rt_count_unreplied_comments();
-    add_submenu_page('edit-comments.php', 'Rt Comments Manager', sprintf( __('Rt Comments Manager %s'), "<span id='awaiting-mod' class='count-$rt_awaiting_mod'><span class='pending-count'>" . number_format_i18n($rt_awaiting_mod) . "</span></span>" ), 'moderate_comments', 'rt_comment_manager', 'rt_comment_manager' );
+    add_submenu_page('edit-comments.php', 'My Comments Manager', sprintf( __('My Comments Manager %s'), "<span id='awaiting-mod' class='count-$rt_awaiting_mod'><span class='pending-count'>" . number_format_i18n($rt_awaiting_mod) . "</span></span>" ), 'delete_posts', 'my_comment_manager', 'rt_comment_manager' );
 }
 
 /**
- * This function is responsible for the Rt Comment Manager page.
+ * This function is responsible for the Rt Comments Manager page.
  *
  */
 function rt_comment_manager() {
-    global $wpdb;
+    global $wpdb, $user_ID;
     ?>
 <div class="wrap">
         <?php
-        $title = "Rt Comments Manager";
+        $title = "My Comments Manager";
         screen_icon();?>
     <h2><?php echo esc_html( $title );
             if ( isset($_GET['s']) && $_GET['s'] )
@@ -85,7 +91,7 @@ function rt_comment_manager() {
         $rt_comments_per_page = 10;
         $rt_page = isset($_GET['apage']) ? $_GET['apage'] : 1;
         $rt_start = ( $rt_page - 1 ) * $rt_comments_per_page;
-        $rt_comment_type = !empty($_GET['comment_type']) ? esc_attr($_GET['comment_type']) : '';
+        $rt_comment_type = 'comment';
         $rt_post_id = isset($_REQUEST['p']) ? (int) $_REQUEST['p'] : 0;
         list($_rt_comments, $rt_total) = rt_get_comment_list($rt_comment_status, $rt_search, $rt_start, $rt_comments_per_page, $rt_post_id, $rt_comment_type);
         $rt_comments = array_slice($_rt_comments, 0, $rt_comments_per_page);
@@ -103,20 +109,30 @@ function rt_comment_manager() {
                 <?php
                 $rt_status_links = array();
                 $num_comments = ( $rt_post_id ) ? rt_count_comments( $rt_post_id ) : rt_count_comments();
-                $stati = array(
-                        'all' => _n_noop('All', 'All'),
-                        'moderated' => _n_noop('Pending <span class="count">(<span class="pending-count">%s</span>)</span>', 'Pending <span class="count">(<span class="pending-count">%s</span>)</span>'),
-                        'approved' => _n_noop('Approved', 'Approved'),
-                        'spam' => _n_noop('Spam <span class="count">(<span class="spam-count">%s</span>)</span>', 'Spam <span class="count">(<span class="spam-count">%s</span>)</span>'),
-                        'trash' => _n_noop('Trash <span class="count">(<span class="trash-count">%s</span>)</span>', 'Trash <span class="count">(<span class="trash-count">%s</span>)</span>'),
-                        'unreplied' => _n_noop('Unreplied Comment <span class="count">(<span class="unreplied-count">%s</span>)</span>', 'Unreplied Comments <span class="count">(<span class="unreplied-count">%s</span>)</span>'),
-                        'ignored' => _n_noop('Ignored Comment <span class="count">(<span class="ignored-count">%s</span>)</span>', 'Ignored Comments <span class="count">(<span class="ignored-count">%s</span>)</span>')
-                );
+                $user_can = current_user_can('edit_post', $post->ID);
+                if ($user_can) {
+                    $stati = array(
+                            'all' => _n_noop('All', 'All'),
+                            'moderated' => _n_noop('Pending <span class="count">(<span class="pending-count">%s</span>)</span>', 'Pending <span class="count">(<span class="pending-count">%s</span>)</span>'),
+                            'approved' => _n_noop('Approved', 'Approved'),
+                            'spam' => _n_noop('Spam <span class="count">(<span class="spam-count">%s</span>)</span>', 'Spam <span class="count">(<span class="spam-count">%s</span>)</span>'),
+                            'trash' => _n_noop('Trash <span class="count">(<span class="trash-count">%s</span>)</span>', 'Trash <span class="count">(<span class="trash-count">%s</span>)</span>'),
+                            'unreplied' => _n_noop('Unreplied Comment <span class="count">(<span class="unreplied-count">%s</span>)</span>', 'Unreplied Comments <span class="count">(<span class="unreplied-count">%s</span>)</span>'),
+                            'ignored' => _n_noop('Ignored Comment <span class="count">(<span class="ignored-count">%s</span>)</span>', 'Ignored Comments <span class="count">(<span class="ignored-count">%s</span>)</span>')
+                    );
+                }
+                else {
+                    $stati = array(
+                            'all' => _n_noop('All', 'All'),
+                            'unreplied' => _n_noop('Unreplied Comment <span class="count">(<span class="unreplied-count">%s</span>)</span>', 'Unreplied Comments <span class="count">(<span class="unreplied-count">%s</span>)</span>'),
+                            'ignored' => _n_noop('Ignored Comment <span class="count">(<span class="ignored-count">%s</span>)</span>', 'Ignored Comments <span class="count">(<span class="ignored-count">%s</span>)</span>')
+                    );
+                }
 
                 if ( !EMPTY_TRASH_DAYS )
                     unset($stati['trash']);
 
-                $link = 'edit-comments.php?page=rt_comment_manager';
+                $link = 'edit-comments.php?page=my_comment_manager';
                 if ( !empty($rt_comment_type) && 'all' != $rt_comment_type )
                     $link = add_query_arg( 'comment_type', $rt_comment_type, $link );
 
@@ -143,7 +159,7 @@ function rt_comment_manager() {
         <p class="search-box">
             <label class="screen-reader-text" for="comment-search-input"><?php _e( 'Search Comments' ); ?>:</label>
             <input type="text" id="comment-search-input" name="s" value="<?php _admin_search_query(); ?>" />
-            <input type="hidden" name="page" value="rt_comment_manager">
+            <input type="hidden" name="page" value="my_comment_manager">
             <input type="submit" value="<?php esc_attr_e( 'Search Comments' ); ?>" class="button" />
         </p>
         <input type="hidden" name="mode" value="<?php echo esc_attr($rt_mode); ?>" />
@@ -201,8 +217,189 @@ function rt_comment_manager() {
     else {
         echo "No Results Found!";
     }
-    wp_comment_reply('-1', true, 'detail');
-    wp_comment_trashnotice();
+    if (current_user_can('moderate_comments')) {
+        wp_comment_reply('-1', true, 'detail');
+        wp_comment_trashnotice();
+    }
+    else {
+        rt_comment_reply('-1', true, 'detail');
+    }
+}
+
+/**
+ * This function handles the display comment reply fields for authors.
+ *
+ */
+function rt_comment_reply($position = '1', $checkbox = false, $mode = 'single', $table_row = true) {
+    global $current_user;
+
+    // allow plugin to replace the popup content
+    $content = apply_filters( 'wp_comment_reply', '', array('position' => $position, 'checkbox' => $checkbox, 'mode' => $mode) );
+
+    if ( ! empty($content) ) {
+        echo $content;
+        return;
+    }
+
+    $columns = get_column_headers('edit-comments');
+    $hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns('edit-comments') ) );
+    $col_count = count($columns) - count($hidden);
+
+    ?>
+<form method="get" action="">
+    <?php if ( $table_row ) : ?>
+    <table style="display:none;"><tbody id="com-reply"><tr id="replyrow" style="display:none;"><td colspan="<?php echo $col_count; ?>">
+    <?php else : ?>
+                    <div id="com-reply" style="display:none;"><div id="replyrow" style="display:none;">
+    <?php endif; ?>
+                            <div id="replyhead" style="display:none;"><?php _e('Reply to Comment'); ?></div>
+
+                            <div id="edithead" style="display:none;">
+                                <div class="inside">
+                                    <label for="author"><?php _e('Name') ?></label>
+                                    <input type="text" name="newcomment_author" size="50" value="" tabindex="101" id="author" />
+                                </div>
+
+                                <div class="inside">
+                                    <label for="author-email"><?php _e('E-mail') ?></label>
+                                    <input type="text" name="newcomment_author_email" size="50" value="" tabindex="102" id="author-email" />
+                                </div>
+
+                                <div class="inside">
+                                    <label for="author-url"><?php _e('URL') ?></label>
+                                    <input type="text" id="author-url" name="newcomment_author_url" size="103" value="" tabindex="103" />
+                                </div>
+                                <div style="clear:both;"></div>
+                            </div>
+
+                            <div id="replycontainer"><textarea rows="8" cols="40" name="replycontent" tabindex="104" id="replycontent"></textarea></div>
+
+                            <p id="replysubmit" class="submit">
+                                <a href="#comments-form" class="cancel button-secondary alignleft" tabindex="106"><?php _e('Cancel'); ?></a>
+                                <a href="#comments-form" class="save button-primary alignright" tabindex="104">
+                                    <span id="rtreplybtn"><?php _e('Submit Reply'); ?></span></a>
+                                <img class="waiting" style="display:none;" src="images/wpspin_light.gif" alt="" />
+                                <span class="error" style="display:none;"></span>
+                                <br class="clear" />
+                            </p>
+
+                            <input type="hidden" name="user_ID" id="user_ID" value="<?php echo $current_user->ID; ?>" />
+                            <input type="hidden" name="action" id="action" value="" />
+                            <input type="hidden" name="comment_ID" id="comment_ID" value="" />
+                            <input type="hidden" name="comment_post_ID" id="comment_post_ID" value="" />
+                            <input type="hidden" name="status" id="status" value="" />
+                            <input type="hidden" name="position" id="position" value="<?php echo $position; ?>" />
+                            <input type="hidden" name="checkbox" id="checkbox" value="<?php echo $checkbox ? 1 : 0; ?>" />
+                            <input type="hidden" name="mode" id="mode" value="<?php echo esc_attr($mode); ?>" />
+    <?php wp_nonce_field( 'rt-reply-to-comment', '_ajax_nonce', false ); ?>
+    <?php wp_comment_form_unfiltered_html_nonce(); ?>
+    <?php if ( $table_row ) : ?>
+                            </td></tr></tbody></table>
+    <?php else : ?>
+                        </div></div>
+    <?php endif; ?>
+                    </form>
+                    <script type="text/javascript">
+                        jQuery("#rtreplybtn").click(function(){
+                            var post = {};
+
+                            jQuery('#replysubmit .waiting').show();
+
+                            jQuery('#replyrow input').each(function() {
+                                post[ jQuery(this).attr('name') ] = jQuery(this).val();
+                            });
+
+                            post.content = jQuery('#replycontent').val();
+                            post.id = post.comment_post_ID;
+                            post.comments_listing = this.comments_listing;
+                            post['action'] = "rt-reply-to-comment";
+
+                            jQuery.ajax({
+                                type : 'POST',
+                                url : ajaxurl,
+                                data : post,
+                                success : function(x) { commentReply.show(x); },
+                                error : function(r) { commentReply.error(r); }
+                            });
+
+                            return false;
+                        });
+                    </script>
+    <?php
+}
+
+add_action('wp_ajax_rt-reply-to-comment', 'rt_reply_to_comment');
+/**
+ * This function handles the comment reply of authors.
+ *
+ */
+function rt_reply_to_comment() {
+    global $wpdb, $user_ID;
+    $action = $_POST['action'];
+    check_ajax_referer( $action );
+
+    $comment_post_ID = (int) $_POST['comment_post_ID'];
+
+    $status = $wpdb->get_var( $wpdb->prepare("SELECT post_status FROM $wpdb->posts WHERE ID = %d", $comment_post_ID) );
+    if ( empty($status) )
+        die('1');
+    elseif ( in_array($status, array('draft', 'pending', 'trash') ) )
+        die( __('Error: you are replying to a comment on a draft post.') );
+
+    $user = wp_get_current_user();
+    if ( $user->ID ) {
+        $comment_author       = $wpdb->escape($user->display_name);
+        $comment_author_email = $wpdb->escape($user->user_email);
+        $comment_author_url   = $wpdb->escape($user->user_url);
+        $comment_content      = trim($_POST['content']);
+        if ( current_user_can('unfiltered_html') ) {
+            if ( wp_create_nonce('unfiltered-html-comment_' . $comment_post_ID) != $_POST['_wp_unfiltered_html_comment'] ) {
+                kses_remove_filters(); // start with a clean slate
+                kses_init_filters(); // set up the filters
+            }
+        }
+    } else {
+        die( __('Sorry, you must be logged in to reply to a comment.') );
+    }
+
+    if ( '' == $comment_content )
+        die( __('Error: please type a comment.') );
+
+    $comment_parent = absint($_POST['comment_ID']);
+    $commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email', 'comment_author_url', 'comment_content', 'comment_type', 'comment_parent', 'user_ID');
+    $comment_id = wp_new_comment( $commentdata );
+    $comment = get_comment($comment_id);
+
+    if ( ! $comment ) die('1');
+
+    $modes = array( 'single', 'detail', 'dashboard' );
+    $mode = isset($_POST['mode']) && in_array( $_POST['mode'], $modes ) ? $_POST['mode'] : 'detail';
+    $position = ( isset($_POST['position']) && (int) $_POST['position']) ? (int) $_POST['position'] : '-1';
+    $checkbox = ( isset($_POST['checkbox']) && true == $_POST['checkbox'] ) ? 1 : 0;
+
+    if ( get_option('show_avatars') && 'single' != $mode )
+        add_filter( 'comment_author', 'floated_admin_avatar' );
+
+    $x = new WP_Ajax_Response();
+
+    ob_start();
+    if ( 'dashboard' == $mode ) {
+        require_once( ABSPATH . 'wp-admin/includes/dashboard.php' );
+        _wp_dashboard_recent_comments_row( $comment, false );
+    } else {
+        rt_comment_row( $comment->comment_ID, $mode, false, $checkbox );
+    }
+    $comment_list_item = ob_get_contents();
+    ob_end_clean();
+
+    $x->add( array(
+            'what' => 'comment',
+            'id' => $comment->comment_ID,
+            'data' => $comment_list_item,
+            'position' => $position
+    ));
+
+    $x->send();
 }
 
 /**
@@ -263,10 +460,16 @@ function rt_unreplied_comments() {
  * @return array($rt_ignore_comment_ids, $rt_total_ignore) which contains the ignored comment ids and total ignored comments.
  */
 function rt_ignored_comments() {
-    global $wpdb;
+    global $wpdb, $user_ID;
+    $rt_post_sql = "SELECT ID FROM {$wpdb->posts} WHERE post_author={$user_ID} AND post_status != 'trash'";
+    $rt_posts = $wpdb->get_col($rt_post_sql);
+    $rt_posts_ids = implode(',', $rt_posts);
+    $rt_comments_sql = "SELECT comment_ID FROM {$wpdb->comments} WHERE comment_post_ID IN ({$rt_posts_ids}) AND comment_type = ''";
+    $rt_comments = $wpdb->get_col($rt_comments_sql);
+    $rt_comments_ids = implode(',',$rt_comments);
     $meta_key = 'rt_comment_manger_ignore';
     $meta_value = 'ignore';
-    $ignore_sql = "SELECT comment_id FROM {$wpdb->commentmeta} WHERE meta_key='{$meta_key}' AND meta_value='{$meta_value}'";
+    $ignore_sql = "SELECT comment_id FROM {$wpdb->commentmeta} WHERE meta_key='{$meta_key}' AND meta_value='{$meta_value}' AND comment_id IN ({$rt_comments_ids})";
     $rt_ignore_comments = $wpdb->get_col($ignore_sql);
     $rt_total_ignore = count($rt_ignore_comments);
     $rt_ignore_comment_ids = implode(",", $rt_ignore_comments);
@@ -290,7 +493,7 @@ function rt_get_comment_list($rt_comment_status = '', $rt_search = false, $rt_st
     if ( 'unreplied' == $rt_comment_status ) {
         list($rt_unreplied_comment_id, $unreplied_total) = rt_unreplied_comments();
         if ($unreplied_total > 0) {
-            $approved = "c.comment_ID IN ({$rt_unreplied_comment_id})";
+            $approved = "c.comment_ID IN ({$rt_unreplied_comment_id}) AND ( c.comment_approved = '0' OR c.comment_approved = '1' )";
         }
         $total = $unreplied_total;
     } elseif ( 'ignored' == $rt_comment_status ) {
@@ -443,9 +646,9 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
         $trash_url = esc_url( "comment.php?action=trashcomment&p=$post->ID&c=$comment->comment_ID&$del_nonce" );
         $untrash_url = esc_url( "comment.php?action=untrashcomment&p=$post->ID&c=$comment->comment_ID&$del_nonce" );
         $delete_url = esc_url( "comment.php?action=deletecomment&p=$post->ID&c=$comment->comment_ID&$del_nonce" );
-        $ignore_url = esc_url( "edit-comments.php?page=rt_comment_manager&comment_status=$comment_status&ignore=$comment->comment_ID");
-        $unignore_url = esc_url( "edit-comments.php?page=rt_comment_manager&comment_status=$comment_status&unignore=$comment->comment_ID");
     }
+    $ignore_url = esc_url( "edit-comments.php?page=my_comment_manager&comment_status=$comment_status&ignore=$comment->comment_ID");
+    $unignore_url = esc_url( "edit-comments.php?page=my_comment_manager&comment_status=$comment_status&unignore=$comment->comment_ID");
 
     echo "<tr id='comment-$comment->comment_ID' class='$the_comment_status'>";
     $columns = get_column_headers('edit-comments');
@@ -552,6 +755,35 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
                     }
                     echo '</div>';
                 }
+                else {
+                    // preorder it: Approve | Reply | Quick Edit | Edit | Spam | Trash
+                    $actions = array(
+                            'reply' => '', 'ignore' => '', 'unignore' => ''
+                    );
+                    if ( 'trash' != $the_comment_status ) {
+                        if ( 'ignored' != $comment_status) {
+                            if ( 'spam' != $the_comment_status ) {
+                                $actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\');return false;" class="vim-r" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a> | ';
+                                //$actions['ignore'] = "<a href='$ignore_url' class='rtignore' title='" . __( 'Ignore this comment' ) . "'>" . _x('Ignore', 'verb') . '</a>';
+                            }
+                        }
+                        else {
+                            $actions['unignore'] = "<a href='$unignore_url' class='rtunignore' title='" . __( 'Remove this comment from Ignore list' ) . "'>" . _x('Remove', 'verb') . '</a>';
+                        }
+                    }
+                    $actions = apply_filters( 'comment_row_actions', array_filter($actions), $comment );
+
+                    $i = 0;
+                    echo '<div class="row-actions">';
+                    foreach ( $actions as $action => $link ) {
+                        ++$i;
+                        if ( ('reply' == $action) && ! $from_ajax )
+                            $action .= ' hide-if-no-js';
+
+                        echo "<span class='$action'>$link</span>";
+                    }
+                    echo '</div>';
+                }
 
                 echo '</td>';
                 break;
@@ -623,6 +855,7 @@ function rt_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, 
 
 /**
  * This function ignores the comment.
+ * @param $rt_comment_id is the ID of the comment which is to be ignored
  *
  */
 function rt_ignore_comment($rt_comment_id) {
@@ -636,6 +869,7 @@ function rt_ignore_comment($rt_comment_id) {
 
 /**
  * This function removes the comment from ignore list.
+ * @param $rt_comment_id is the ID of the comment which is to be removed from ignored list.
  *
  */
 function rt_remove_ignore_comment($rt_comment_id) {
@@ -651,7 +885,4 @@ $rt_check_page = isset($_GET['page']) ? $_GET['page'] : null;
 if ((($comment_status == 'all') || ($comment_status == 'moderated') || ($comment_status == 'approved') || ($comment_status == 'unreplied'))) {
     add_filter('comment_row_actions', 'rt_cm_reply_link');
 }
-add_action('admin_menu', 'rt_admin_page');
-add_filter('comment_status_links', 'rt_cm_link');
-//add_filter('comment_row_actions', 'rt_cm_reply_link', 10, 2);
 ?>
