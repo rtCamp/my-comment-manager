@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: Comments, Comment, multi author, Plugins, Dashboard, Moderation, Admin
 Requires at least: WP 2.9
 Tested up to: WPMU 2.9.2
-Stable tag: 1.3
+Stable tag: 1.3.2
 
 Comments Manager for multi-author blogs, where each author can manage comments posted on his/her articles.
 
