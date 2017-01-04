@@ -7,14 +7,19 @@ if [[ -z "$TRAVIS" ]]; then
 	exit 1
 fi
 
-if [[ -z "$WP_ORG_PASSWORD" ]]; then
-	echo "WordPress.org password not set" 1>&2
-	exit 1
-fi
-
 if [ -z "$TRAVIS_TAG" ]; then
 	echo "Build should only take place on tag push." 1>&2
 	exit 0
+fi
+
+if [ "$WP_MULTISITE" -nq "0" ]; then
+	echo "Skip building, We will only build on WP_MULTISITE=0." 1>&2
+	exit 0
+fi
+
+if [[ -z "$WP_ORG_PASSWORD" ]]; then
+	echo "WordPress.org password not set" 1>&2
+	exit 1
 fi
 
 if [[ -z "$WP_ORG_USERNAME" ]]; then
