@@ -12,7 +12,7 @@ if [ -z "$TRAVIS_TAG" ]; then
 	exit 0
 fi
 
-if [ "$WP_MULTISITE" -nq "0" ]; then
+if [ "$WP_MULTISITE" -ne "0" ]; then
 	echo "Skip building, We will only build on WP_MULTISITE=0." 1>&2
 	exit 0
 fi
