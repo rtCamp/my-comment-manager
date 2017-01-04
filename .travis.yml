@@ -35,3 +35,5 @@ deploy:
   on:
     tags: true
     php: 7.0
+    condition: "$WP_VERSION = trunk"
+    condition: "$WP_MULTISITE = 0"
