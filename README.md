@@ -7,7 +7,7 @@ Comments Manager for multi-author blogs, where each author can manage comments p
 **Tags:** [Comments](https://wordpress.org/plugins/tags/Comments), [Comment](https://wordpress.org/plugins/tags/Comment), [multi author](https://wordpress.org/plugins/tags/multi author), [Plugins](https://wordpress.org/plugins/tags/Plugins), [Dashboard](https://wordpress.org/plugins/tags/Dashboard), [Moderation](https://wordpress.org/plugins/tags/Moderation), [Admin](https://wordpress.org/plugins/tags/Admin)  
 **Requires at least:** WP 2.9  
 **Tested up to:** WPMU 2.9.2  
-**Stable tag:** 1.3.6  
+**Stable tag:** 1.3.7  
 **Donate link:** https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9488824  
 
 [![Build Status](https://travis-ci.org/rtCamp/my-comment-manager.svg?branch=master)](https://travis-ci.org/rtCamp/my-comment-manager) 
