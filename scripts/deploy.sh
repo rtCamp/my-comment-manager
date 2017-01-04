@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # On push of git tag push specified files to SVN repo.
 # Author: Utkarsh Patel (@utkarsh_me)
+# Credits:
+# - https://github.com/xwp/wp-dev-lib
+# - https://deliciousbrains.com/deploying-wordpress-plugins-travis/
 
 if [[ -z "$TRAVIS" ]]; then
 	echo "Script is only to be run by Travis CI" 1>&2
